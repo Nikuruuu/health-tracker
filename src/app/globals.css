@@ -1,26 +1,113 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@layer base {
+  :root {
+    --background: #f7f7f3;
+    --foreground: #111827;
+
+    --card: #ffffff;
+    --card-foreground: #111827;
+
+    --popover: #ffffff;
+    --popover-foreground: #111827;
+
+    --primary: #1b643f;
+    --primary-foreground: #ffffff;
+
+    --secondary: #f0f0eb;
+    --secondary-foreground: #1b643f;
+
+    --muted: #f3f3ee;
+    --muted-foreground: #6b7280;
+
+    --accent: #eef4f0;
+    --accent-foreground: #1b643f;
+
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    --border: #e4e4dd;
+    --input: #e4e4dd;
+    --ring: #1b643f;
+
+    --radius: 0.5rem;
+
+    /* VitaPath Brand tokens */
+    --brand-forest: #1b643f;
+    --brand-forest-dark: #12482c;
+    --brand-forest-deeper: #0d3822;
+    --brand-forest-light: #247b4f;
+    --brand-cream: #f7f7f3;
+    --brand-cream-card: #ffffff;
+    --brand-accent-orange: #f97316;
+  }
+
+  .dark {
+    --background: #0d1a13;
+    --foreground: #f3f4f6;
+
+    --card: #13241b;
+    --card-foreground: #f3f4f6;
+
+    --popover: #13241b;
+    --popover-foreground: #f3f4f6;
+
+    --primary: #247b4f;
+    --primary-foreground: #ffffff;
+
+    --secondary: #1a3326;
+    --secondary-foreground: #f3f4f6;
+
+    --muted: #1a3326;
+    --muted-foreground: #9ca3af;
+
+    --accent: #1e3b2c;
+    --accent-foreground: #f3f4f6;
+
+    --destructive: #7f1d1d;
+    --destructive-foreground: #fecaca;
+
+    --border: #234333;
+    --input: #234333;
+    --ring: #34d399;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-brand-forest: var(--brand-forest);
+  --color-brand-forest-dark: var(--brand-forest-dark);
+  --color-brand-forest-deeper: var(--brand-forest-deeper);
+  --color-brand-forest-light: var(--brand-forest-light);
+  --color-brand-cream: var(--brand-cream);
+  --color-brand-cream-card: var(--brand-cream-card);
+  --color-brand-accent-orange: var(--brand-accent-orange);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
 }
