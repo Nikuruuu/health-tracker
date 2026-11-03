@@ -21,9 +21,8 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#f7f7f3] flex flex-col justify-center items-center px-4 py-12 sm:px-6">
+    <div className="min-h-screen w-full bg-background text-foreground flex flex-col justify-center items-center px-4 py-12 sm:px-6">
       <OnboardingForm userEmail={session.user.email} />
     </div>
   );
 }
-

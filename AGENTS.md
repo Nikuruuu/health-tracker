@@ -42,6 +42,7 @@ src/lib/          auth.ts, auth-client.ts, session.ts, env.ts, units.ts
 8. No medical claims in UI copy. Settings shows a "not medical advice" note.
 9. Version-sensitive APIs (Next.js `proxy.ts` on 16+ vs `middleware.ts` on ≤15, Better Auth, Drizzle, Neon): check current docs and installed version; don't guess.
 10. UI: use shadcn/ui components (Button, Card, Input, Dialog, Tabs, etc.) from src/components/ui. Add missing ones with `npx shadcn@latest add <name>`; don't hand-write equivalents or add another UI library. Style with Tailwind and theme CSS variables only.
+11. No hardcoded colors (hex, bg-white, text-gray-*, etc.) anywhere outside globals.css. Use theme tokens, and check every new screen in both light and dark mode.
 
 ## Workflow
 Plan briefly before multi-file work. Build in this order:
