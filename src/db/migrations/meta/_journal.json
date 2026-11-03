@@ -8,6 +8,13 @@
       "when": 1793615577778,
       "tag": "0000_wooden_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793627174599,
+      "tag": "0001_condemned_alice",
+      "breakpoints": true
     }
   ]
 }

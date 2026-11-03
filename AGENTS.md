@@ -52,4 +52,13 @@ Plan briefly before multi-file work. Build in this order:
 5. Nutrition → Exercise → Overview
 6. Photos, export/delete account, PWA, a11y pass
 
+
+## Agent discipline
+- Do exactly what the prompt scopes. No extra features, refactors, renames or new dependencies.
+- Before writing code, state the plan and list the files you'll touch. If a file isn't on the list, ask first.
+- Never claim something works without running it. Report the actual output of typecheck, lint, test and build.
+- If a check fails, fix the cause. Don't delete or weaken tests, add ts-ignore, or loosen types to get green.
+- Don't edit src/db/schema/auth.ts, applied migrations, or .env* files.
+- Stop and ask when the docs and the request conflict, or when something is ambiguous.
+
 Keep changes scoped. For UI work, check mobile (~390px) and desktop widths. End each task with: what changed, files, migrations, tests, follow-ups, assumptions.

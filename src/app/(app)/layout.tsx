@@ -1,6 +1,10 @@
 import "server-only";
+import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/session";
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { db } from "@/db";
+import { profile } from "@/db/schema/app";
+import { eq } from "drizzle-orm";
 import type { ReactNode } from "react";
 
 export default async function AppLayout({
@@ -9,6 +13,15 @@ export default async function AppLayout({
   children: ReactNode;
 }>) {
   const session = await requireSession();
+
+  // Redirect users without onboardedAt to /onboarding
+  const userProfile = await db.query.profile.findFirst({
+    where: eq(profile.userId, session.user.id),
+  });
+
+  if (!userProfile?.onboardedAt) {
+    redirect("/onboarding");
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -30,4 +43,3 @@ export default async function AppLayout({
     </div>
   );
 }
-

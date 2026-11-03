@@ -39,3 +39,7 @@ Desktop: left sidebar. Mobile: bottom tab bar. Each section has `loading.tsx` an
 - One accent color per metric, consistent across rings, charts and meters.
 - Optimistic updates with undo toasts for quick actions. Logging should take ≤ 3 taps from Overview where feasible.
 - Timer announces progress via `aria-live`.
+
+
+## Visual references in docs/design/
+Dashboard.jpg (Overview), nutrition.jpg, Exercise.jpg, weight.jpg, settings.jpg. Desktop light only. Use them for layout, style and components. Mobile and dark layouts are derived from them. Behavior rules in this file and docs/domain.md win over the images.
