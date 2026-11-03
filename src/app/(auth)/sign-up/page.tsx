@@ -79,124 +79,126 @@ export default function SignUpPage() {
     <div className="w-full">
       <AuthTabs activeTab="sign-up" />
 
-      <div className="mb-6">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
-          Create your account
-        </h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Start your journey to sustainable health.
-        </p>
-      </div>
-
-      {generalError && (
-        <div className="mb-5 rounded-lg bg-red-50 border border-red-200/80 p-3 text-xs text-red-700">
-          {generalError}
+      <div className="rounded-2xl bg-card border border-border shadow-sm p-6 sm:p-8">
+        <div className="mb-6">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+            Create your account
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Start your journey to sustainable health.
+          </p>
         </div>
-      )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Full Name Field */}
-        <div className="space-y-1.5">
-          <Label htmlFor="name" className="text-xs font-semibold text-gray-700">
-            Full Name
-          </Label>
-          <div className="relative">
-            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            <Input
-              id="name"
-              type="text"
-              autoComplete="name"
-              placeholder="e.g. Alex Smith"
-              value={values.name}
-              onChange={(e) => {
-                setValues((prev) => ({ ...prev, name: e.target.value }));
-                if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
-              }}
-              className="h-11 pl-10 rounded-lg bg-white border-gray-200 text-sm focus-visible:ring-[#185a37]"
-            />
+        {generalError && (
+          <div className="mb-5 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive">
+            {generalError}
           </div>
-          {errors.name && (
-            <p className="text-xs text-red-600 mt-1">{errors.name}</p>
-          )}
-        </div>
+        )}
 
-        {/* Email Field */}
-        <div className="space-y-1.5">
-          <Label htmlFor="email" className="text-xs font-semibold text-gray-700">
-            Email
-          </Label>
-          <div className="relative">
-            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              value={values.email}
-              onChange={(e) => {
-                setValues((prev) => ({ ...prev, email: e.target.value }));
-                if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
-              }}
-              className="h-11 pl-10 rounded-lg bg-white border-gray-200 text-sm focus-visible:ring-[#185a37]"
-            />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Full Name Field */}
+          <div className="space-y-1.5">
+            <Label htmlFor="name" className="text-xs font-semibold text-foreground">
+              Full Name
+            </Label>
+            <div className="relative">
+              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                id="name"
+                type="text"
+                autoComplete="name"
+                placeholder="e.g. Alex Smith"
+                value={values.name}
+                onChange={(e) => {
+                  setValues((prev) => ({ ...prev, name: e.target.value }));
+                  if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
+                }}
+                className="h-11 pl-10 rounded-lg bg-background border-input text-foreground text-sm focus-visible:ring-ring"
+              />
+            </div>
+            {errors.name && (
+              <p className="text-xs text-destructive mt-1">{errors.name}</p>
+            )}
           </div>
-          {errors.email && (
-            <p className="text-xs text-red-600 mt-1">{errors.email}</p>
-          )}
-        </div>
 
-        {/* Password Field */}
-        <div className="space-y-1.5">
-          <Label htmlFor="password" className="text-xs font-semibold text-gray-700">
-            Password
-          </Label>
-          <div className="relative">
-            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            <Input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              autoComplete="new-password"
-              placeholder="At least 8 characters"
-              value={values.password}
-              onChange={(e) => {
-                setValues((prev) => ({ ...prev, password: e.target.value }));
-                if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
-              }}
-              className="h-11 pl-10 pr-10 rounded-lg bg-white border-gray-200 text-sm focus-visible:ring-[#185a37]"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
+          {/* Email Field */}
+          <div className="space-y-1.5">
+            <Label htmlFor="email" className="text-xs font-semibold text-foreground">
+              Email
+            </Label>
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={values.email}
+                onChange={(e) => {
+                  setValues((prev) => ({ ...prev, email: e.target.value }));
+                  if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+                }}
+                className="h-11 pl-10 rounded-lg bg-background border-input text-foreground text-sm focus-visible:ring-ring"
+              />
+            </div>
+            {errors.email && (
+              <p className="text-xs text-destructive mt-1">{errors.email}</p>
+            )}
           </div>
-          {errors.password && (
-            <p className="text-xs text-red-600 mt-1">{errors.password}</p>
-          )}
+
+          {/* Password Field */}
+          <div className="space-y-1.5">
+            <Label htmlFor="password" className="text-xs font-semibold text-foreground">
+              Password
+            </Label>
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                placeholder="At least 8 characters"
+                value={values.password}
+                onChange={(e) => {
+                  setValues((prev) => ({ ...prev, password: e.target.value }));
+                  if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+                }}
+                className="h-11 pl-10 pr-10 rounded-lg bg-background border-input text-foreground text-sm focus-visible:ring-ring"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {errors.password && (
+              <p className="text-xs text-destructive mt-1">{errors.password}</p>
+            )}
+          </div>
+
+          {/* Submit Button */}
+          <Button
+            type="submit"
+            disabled={isPending}
+            className="h-11 w-full rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm shadow-xs transition-all cursor-pointer mt-2"
+          >
+            {isPending ? "Creating account..." : "Create account"}
+          </Button>
+        </form>
+
+        {/* Social Logins */}
+        <div className="mt-6">
+          <SocialButtons hasGoogleAuth={false} />
         </div>
-
-        {/* Submit Button */}
-        <Button
-          type="submit"
-          disabled={isPending}
-          className="h-11 w-full rounded-lg bg-[#185a37] hover:bg-[#12452a] text-white font-semibold text-sm shadow-xs transition-all cursor-pointer mt-2"
-        >
-          {isPending ? "Creating account..." : "Create account"}
-        </Button>
-      </form>
-
-      {/* Social Logins */}
-      <div className="mt-6">
-        <SocialButtons hasGoogleAuth={false} />
       </div>
 
       {/* Switch to Sign In */}
-      <div className="mt-8 text-center text-xs text-gray-600">
+      <div className="mt-6 text-center text-xs text-muted-foreground">
         Already have an account?{" "}
-        <Link href="/sign-in" className="font-semibold text-[#185a37] hover:underline">
+        <Link href="/sign-in" className="font-semibold text-foreground underline underline-offset-4 hover:text-muted-foreground">
           Sign in
         </Link>
       </div>

@@ -81,124 +81,125 @@ function SignInForm() {
     <div className="w-full">
       <AuthTabs activeTab="sign-in" />
 
-      <div className="mb-6">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
-          Welcome back
-        </h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Sign in to pick up today&apos;s plan.
-        </p>
-      </div>
-
-      {generalError && (
-        <div className="mb-5 rounded-lg bg-red-50 border border-red-200/80 p-3 text-xs text-red-700">
-          {generalError}
+      <div className="rounded-2xl bg-card border border-border shadow-sm p-6 sm:p-8">
+        <div className="mb-6">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+            Welcome back
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Sign in to pick up today&apos;s plan.
+          </p>
         </div>
-      )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Email Field */}
-        <div className="space-y-1.5">
-          <Label htmlFor="email" className="text-xs font-semibold text-gray-700">
-            Email
-          </Label>
-          <div className="relative">
-            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              value={values.email}
-              onChange={(e) => {
-                setValues((prev) => ({ ...prev, email: e.target.value }));
-                if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
-              }}
-              className="h-11 pl-10 rounded-lg bg-white border-gray-200 text-sm focus-visible:ring-[#185a37]"
-            />
+        {generalError && (
+          <div className="mb-5 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive">
+            {generalError}
           </div>
-          {errors.email && (
-            <p className="text-xs text-red-600 mt-1">{errors.email}</p>
-          )}
-        </div>
+        )}
 
-        {/* Password Field */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password" className="text-xs font-semibold text-gray-700">
-              Password
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email Field */}
+          <div className="space-y-1.5">
+            <Label htmlFor="email" className="text-xs font-semibold text-foreground">
+              Email
             </Label>
-            <button
-              type="button"
-              onClick={() => alert("Password reset link will be sent to your email.")}
-              className="text-xs font-medium text-[#185a37] hover:underline cursor-pointer"
-            >
-              Forgot?
-            </button>
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={values.email}
+                onChange={(e) => {
+                  setValues((prev) => ({ ...prev, email: e.target.value }));
+                  if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+                }}
+                className="h-11 pl-10 rounded-lg bg-background border-input text-foreground text-sm focus-visible:ring-ring"
+              />
+            </div>
+            {errors.email && (
+              <p className="text-xs text-destructive mt-1">{errors.email}</p>
+            )}
           </div>
-          <div className="relative">
-            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            <Input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              autoComplete="current-password"
-              placeholder="••••••••"
-              value={values.password}
-              onChange={(e) => {
-                setValues((prev) => ({ ...prev, password: e.target.value }));
-                if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
-              }}
-              className="h-11 pl-10 pr-10 rounded-lg bg-white border-gray-200 text-sm focus-visible:ring-[#185a37]"
+
+          {/* Password Field */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password" className="text-xs font-semibold text-foreground">
+                Password
+              </Label>
+              <button
+                type="button"
+                onClick={() => alert("Password reset link will be sent to your email.")}
+                className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline cursor-pointer"
+              >
+                Forgot?
+              </button>
+            </div>
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                placeholder="••••••••"
+                value={values.password}
+                onChange={(e) => {
+                  setValues((prev) => ({ ...prev, password: e.target.value }));
+                  if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+                }}
+                className="h-11 pl-10 pr-10 rounded-lg bg-background border-input text-foreground text-sm focus-visible:ring-ring"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {errors.password && (
+              <p className="text-xs text-destructive mt-1">{errors.password}</p>
+            )}
+          </div>
+
+          {/* Keep Me Signed In Checkbox */}
+          <div className="flex items-center space-x-2 pt-1 pb-1">
+            <Checkbox
+              id="remember"
+              checked={keepSignedIn}
+              onCheckedChange={(checked) => setKeepSignedIn(!!checked)}
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            <Label
+              htmlFor="remember"
+              className="text-xs text-muted-foreground font-normal cursor-pointer select-none"
             >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
+              Keep me signed in
+            </Label>
           </div>
-          {errors.password && (
-            <p className="text-xs text-red-600 mt-1">{errors.password}</p>
-          )}
-        </div>
 
-        {/* Keep Me Signed In Checkbox */}
-        <div className="flex items-center space-x-2 pt-1 pb-1">
-          <Checkbox
-            id="remember"
-            checked={keepSignedIn}
-            onCheckedChange={(checked) => setKeepSignedIn(!!checked)}
-            className="data-[state=checked]:bg-[#185a37] data-[state=checked]:border-[#185a37]"
-          />
-          <Label
-            htmlFor="remember"
-            className="text-xs text-gray-600 font-normal cursor-pointer select-none"
+          {/* Submit Button */}
+          <Button
+            type="submit"
+            disabled={isPending}
+            className="h-11 w-full rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm shadow-xs transition-all cursor-pointer"
           >
-            Keep me signed in
-          </Label>
+            {isPending ? "Signing in..." : "Sign in"}
+          </Button>
+        </form>
+
+        {/* Social Logins */}
+        <div className="mt-6">
+          <SocialButtons hasGoogleAuth={false} />
         </div>
-
-        {/* Submit Button */}
-        <Button
-          type="submit"
-          disabled={isPending}
-          className="h-11 w-full rounded-lg bg-[#185a37] hover:bg-[#12452a] text-white font-semibold text-sm shadow-xs transition-all cursor-pointer"
-        >
-          {isPending ? "Signing in..." : "Sign in"}
-        </Button>
-      </form>
-
-      {/* Social Logins */}
-      <div className="mt-6">
-        <SocialButtons hasGoogleAuth={false} />
       </div>
 
       {/* Switch to Sign Up */}
-      <div className="mt-8 text-center text-xs text-gray-600">
+      <div className="mt-6 text-center text-xs text-muted-foreground">
         New to VitaPath?{" "}
-        <Link href="/sign-up" className="font-semibold text-[#185a37] hover:underline">
+        <Link href="/sign-up" className="font-semibold text-foreground underline underline-offset-4 hover:text-muted-foreground">
           Create an account
         </Link>
       </div>
@@ -208,7 +209,7 @@ function SignInForm() {
 
 export default function SignInPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-sm text-gray-500">Loading sign in...</div>}>
+    <Suspense fallback={<div className="p-8 text-center text-sm text-muted-foreground">Loading sign in...</div>}>
       <SignInForm />
     </Suspense>
   );

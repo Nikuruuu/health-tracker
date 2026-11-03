@@ -87,7 +87,7 @@ export default function AuthLayout({
         </div>
 
         {/* Bottom Footer Note */}
-        <div className="relative z-10 text-xs text-white/60">
+        <div className="relative z-10 text-xs text-white/75">
           Track nutrition, movement and body trends in one place.
         </div>
       </aside>
@@ -98,7 +98,7 @@ export default function AuthLayout({
         <div className="flex lg:hidden items-center gap-2 mb-6 self-center">
           <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-sm">
             <svg
-              className="w-5 h-5 text-white"
+              className="w-5 h-5 text-primary-foreground"
               viewBox="0 0 24 24"
               fill="currentColor"
               aria-hidden="true"
@@ -106,7 +106,7 @@ export default function AuthLayout({
               <path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5c0 3.1 2.2 4.6 4 5 .4-.9.9-1.9 1.4-2.8C9.5 12 13.5 9 17 8z" />
             </svg>
           </div>
-          <span className="text-xl font-bold tracking-tight text-primary">VitaPath</span>
+          <span className="text-xl font-bold tracking-tight text-foreground">VitaPath</span>
         </div>
 
         <div className="w-full max-w-[400px] flex flex-col">
