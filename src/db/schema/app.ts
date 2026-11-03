@@ -25,6 +25,7 @@ export const profile = pgTable("profile", {
   startWeightKg: numeric("start_weight_kg", { precision: 5, scale: 2 }).notNull(),
   finalGoalWeightKg: numeric("final_goal_weight_kg", { precision: 5, scale: 2 }).notNull(),
   activePhaseId: text("active_phase_id"),
+  lastDeficitPhaseId: text("last_deficit_phase_id").references(() => phases.id, { onDelete: "set null" }),
   maintenanceMode: boolean("maintenance_mode").notNull().default(false),
   onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

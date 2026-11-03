@@ -250,16 +250,137 @@ export function getPhaseRecalibrationPreview(
   };
 }
 
+export interface MaintenanceTransitionInput {
+  enable: boolean;
+  activePhaseId: string | null;
+  lastDeficitPhaseId: string | null;
+  phases: Array<{ id: string; mode: string; startDate?: string }>;
+}
+
+export interface PhaseSwitchTransitionInput {
+  targetPhaseId: string;
+  activePhaseId: string | null;
+  maintenanceMode: boolean;
+  lastDeficitPhaseId: string | null;
+  phases: Array<{ id: string; mode: string; startDate?: string }>;
+}
+
+export interface PhaseTransitionResult {
+  nextActivePhaseId: string;
+  nextMaintenanceMode: boolean;
+  nextLastDeficitPhaseId: string | null;
+}
+
 /**
  * Returns the deficit phase to activate when turning maintenance OFF.
+ * Restores lastDeficitPhaseId if valid, otherwise falls back to the latest deficit phase by date.
  */
 export function resolveDeficitPhaseOnMaintenanceOff(
-  phasesList: Array<{ id: string; mode: string }>
+  phasesList: Array<{ id: string; mode: string; startDate?: string }>,
+  lastDeficitPhaseId?: string | null
 ): string {
-  // Return the last deficit phase, usually phase 3, or first available deficit phase
   const deficitPhases = phasesList.filter((p) => p.mode === "deficit");
   if (deficitPhases.length === 0) {
     return phasesList[0]?.id ?? "";
   }
-  return deficitPhases[deficitPhases.length - 1].id;
+
+  // If lastDeficitPhaseId is provided and valid among deficit phases, restore it
+  if (lastDeficitPhaseId) {
+    const matched = deficitPhases.find((p) => p.id === lastDeficitPhaseId);
+    if (matched) {
+      return matched.id;
+    }
+  }
+
+  // Fallback: latest deficit phase by date (startDate ascending)
+  const sorted = [...deficitPhases].sort((a, b) => {
+    const dateA = a.startDate ?? "";
+    const dateB = b.startDate ?? "";
+    return dateA.localeCompare(dateB);
+  });
+  return sorted[sorted.length - 1].id;
+}
+
+/**
+ * Computes next phase and maintenance state when toggling maintenance mode.
+ * - Turning ON: saves current deficit phase id in lastDeficitPhaseId; activates Phase 4.
+ * - Turning OFF: restores lastDeficitPhaseId (or falls back to latest deficit phase by date).
+ * - Never overwrites lastDeficitPhaseId if current phase is Phase 4.
+ */
+export function calculateMaintenanceToggleTransition({
+  enable,
+  activePhaseId,
+  lastDeficitPhaseId,
+  phases,
+}: MaintenanceTransitionInput): PhaseTransitionResult {
+  const activePhase = phases.find((p) => p.id === activePhaseId);
+
+  if (enable) {
+    const maintenancePhase = phases.find(
+      (p) => p.mode === "maintenance" || p.id.endsWith("_phase_4")
+    );
+    const nextActivePhaseId = maintenancePhase ? maintenancePhase.id : (activePhaseId ?? "");
+
+    let nextLastDeficitPhaseId = lastDeficitPhaseId;
+    if (activePhase && activePhase.mode === "deficit") {
+      nextLastDeficitPhaseId = activePhase.id;
+    }
+
+    return {
+      nextActivePhaseId,
+      nextMaintenanceMode: true,
+      nextLastDeficitPhaseId,
+    };
+  } else {
+    const nextActivePhaseId = resolveDeficitPhaseOnMaintenanceOff(phases, lastDeficitPhaseId);
+    const isValid = phases.some((p) => p.id === lastDeficitPhaseId && p.mode === "deficit");
+
+    return {
+      nextActivePhaseId,
+      nextMaintenanceMode: false,
+      nextLastDeficitPhaseId: isValid ? lastDeficitPhaseId : null,
+    };
+  }
+}
+
+/**
+ * Computes next phase and maintenance state when switching to a target phase.
+ * - Selecting Phase 4 turns maintenance ON and saves current deficit phase in lastDeficitPhaseId.
+ * - Selecting a deficit phase while maintenance is ON turns maintenance OFF and activates that phase.
+ * - Never overwrites lastDeficitPhaseId while current active phase is Phase 4.
+ */
+export function calculatePhaseSwitchTransition({
+  targetPhaseId,
+  activePhaseId,
+  lastDeficitPhaseId,
+  phases,
+}: PhaseSwitchTransitionInput): PhaseTransitionResult {
+  const targetPhase = phases.find((p) => p.id === targetPhaseId);
+  const activePhase = phases.find((p) => p.id === activePhaseId);
+
+  if (!targetPhase) {
+    throw new Error("Target phase not found.");
+  }
+
+  if (targetPhase.mode === "maintenance") {
+    let nextLastDeficitPhaseId = lastDeficitPhaseId;
+    if (activePhase && activePhase.mode === "deficit") {
+      nextLastDeficitPhaseId = activePhase.id;
+    }
+
+    return {
+      nextActivePhaseId: targetPhase.id,
+      nextMaintenanceMode: true,
+      nextLastDeficitPhaseId,
+    };
+  } else {
+    // Selecting a deficit phase (turns maintenance OFF if it was ON)
+    const isValid = phases.some((p) => p.id === lastDeficitPhaseId && p.mode === "deficit");
+
+    return {
+      nextActivePhaseId: targetPhase.id,
+      nextMaintenanceMode: false,
+      nextLastDeficitPhaseId: isValid ? lastDeficitPhaseId : null,
+    };
+  }
 }

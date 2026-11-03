@@ -11,7 +11,8 @@ import {
 } from "@/domain/config";
 import {
   validateMilestones,
-  resolveDeficitPhaseOnMaintenanceOff,
+  calculateMaintenanceToggleTransition,
+  calculatePhaseSwitchTransition,
 } from "@/domain/phases";
 import {
   targetsSchema,
@@ -180,23 +181,59 @@ export async function switchPhaseAction(input: SwitchPhaseInput) {
   const session = await requireSession();
   const userId = session.user.id;
 
-  // 3. Find target phase scoped strictly by session userId
-  const targetPhase = await db.query.phases.findFirst({
-    where: and(eq(phases.userId, userId), eq(phases.id, parsed.phaseId)),
-  });
+  // 3. Find user profile and target phase strictly scoped by session userId
+  const [userProfile, userPhases] = await Promise.all([
+    db.query.profile.findFirst({
+      where: eq(profile.userId, userId),
+    }),
+    db.query.phases.findMany({
+      where: eq(phases.userId, userId),
+    }),
+  ]);
 
+  if (!userProfile) {
+    throw new Error("User profile not found.");
+  }
+
+  const targetPhase = userPhases.find((p) => p.id === parsed.phaseId);
   if (!targetPhase) {
     throw new Error("Target phase not found.");
   }
 
-  const isMaintenance = targetPhase.mode === "maintenance";
+  // 4. Calculate transition via pure domain function
+  const transition = calculatePhaseSwitchTransition({
+    targetPhaseId: targetPhase.id,
+    activePhaseId: userProfile.activePhaseId,
+    maintenanceMode: userProfile.maintenanceMode,
+    lastDeficitPhaseId: userProfile.lastDeficitPhaseId,
+    phases: userPhases,
+  });
 
-  // 4. Update profile active phase and maintenance linkage
+  // Authoritative check: ensure nextActivePhaseId belongs to signed-in user
+  const activePhaseBelongsToUser = userPhases.some(
+    (p) => p.id === transition.nextActivePhaseId
+  );
+  if (!activePhaseBelongsToUser) {
+    throw new Error("Target phase does not belong to the user.");
+  }
+
+  // Authoritative check: ensure nextLastDeficitPhaseId belongs to signed-in user
+  if (transition.nextLastDeficitPhaseId) {
+    const lastDeficitBelongsToUser = userPhases.some(
+      (p) => p.id === transition.nextLastDeficitPhaseId && p.mode === "deficit"
+    );
+    if (!lastDeficitBelongsToUser) {
+      throw new Error("Invalid deficit phase for user.");
+    }
+  }
+
+  // 5. Update profile active phase, maintenance linkage, and lastDeficitPhaseId
   await db
     .update(profile)
     .set({
-      activePhaseId: targetPhase.id,
-      maintenanceMode: isMaintenance,
+      activePhaseId: transition.nextActivePhaseId,
+      maintenanceMode: transition.nextMaintenanceMode,
+      lastDeficitPhaseId: transition.nextLastDeficitPhaseId,
       updatedAt: new Date(),
     })
     .where(eq(profile.userId, userId));
@@ -220,28 +257,53 @@ export async function toggleMaintenanceAction(input: ToggleMaintenanceInput) {
   const session = await requireSession();
   const userId = session.user.id;
 
-  // 3. Fetch user phases
-  const userPhases = await db.query.phases.findMany({
-    where: eq(phases.userId, userId),
-  });
+  // 3. Fetch user profile and phases strictly scoped by session userId
+  const [userProfile, userPhases] = await Promise.all([
+    db.query.profile.findFirst({
+      where: eq(profile.userId, userId),
+    }),
+    db.query.phases.findMany({
+      where: eq(phases.userId, userId),
+    }),
+  ]);
 
-  let nextPhaseId: string | null = null;
-
-  if (parsed.enable) {
-    // Switch to Phase 4 (Maintenance)
-    const p4 = userPhases.find((p) => p.mode === "maintenance" || p.id.endsWith("_phase_4"));
-    if (p4) nextPhaseId = p4.id;
-  } else {
-    // Return to the last deficit phase
-    nextPhaseId = resolveDeficitPhaseOnMaintenanceOff(userPhases);
+  if (!userProfile) {
+    throw new Error("User profile not found.");
   }
 
-  // 4. Update profile
+  // 4. Calculate transition via pure domain function
+  const transition = calculateMaintenanceToggleTransition({
+    enable: parsed.enable,
+    activePhaseId: userProfile.activePhaseId,
+    lastDeficitPhaseId: userProfile.lastDeficitPhaseId,
+    phases: userPhases,
+  });
+
+  // Authoritative check: ensure nextActivePhaseId belongs to signed-in user
+  const activePhaseBelongsToUser = userPhases.some(
+    (p) => p.id === transition.nextActivePhaseId
+  );
+  if (!activePhaseBelongsToUser) {
+    throw new Error("Target phase does not belong to the user.");
+  }
+
+  // Authoritative check: ensure nextLastDeficitPhaseId belongs to signed-in user
+  if (transition.nextLastDeficitPhaseId) {
+    const lastDeficitBelongsToUser = userPhases.some(
+      (p) => p.id === transition.nextLastDeficitPhaseId && p.mode === "deficit"
+    );
+    if (!lastDeficitBelongsToUser) {
+      throw new Error("Invalid deficit phase for user.");
+    }
+  }
+
+  // 5. Update profile
   await db
     .update(profile)
     .set({
-      maintenanceMode: parsed.enable,
-      ...(nextPhaseId ? { activePhaseId: nextPhaseId } : {}),
+      maintenanceMode: transition.nextMaintenanceMode,
+      activePhaseId: transition.nextActivePhaseId,
+      lastDeficitPhaseId: transition.nextLastDeficitPhaseId,
       updatedAt: new Date(),
     })
     .where(eq(profile.userId, userId));

@@ -23,7 +23,9 @@ Defaults below are seeded from `src/domain/config.ts` at onboarding and editable
 ## Phase and maintenance linkage
 - Selecting Phase 4 turns maintenance mode ON.
 - Turning maintenance ON selects Phase 4.
-- Turning maintenance OFF returns to the last active deficit phase (store it as `lastDeficitPhaseId`).
+- Whenever maintenance turns ON (via toggle or selecting Phase 4), if the active phase is a deficit phase, its id is saved in `lastDeficitPhaseId` on the profile; `lastDeficitPhaseId` is never overwritten while Phase 4 is active.
+- Turning maintenance OFF restores `lastDeficitPhaseId`. If it is empty or no longer valid, fall back to the latest deficit phase by date.
+- Selecting a deficit phase while maintenance is ON turns maintenance OFF and sets that phase active.
 - Both are reversible and never rewrite history.
 
 ## Calories & macros

@@ -1,0 +1,2 @@
+ALTER TABLE "profile" ADD COLUMN "last_deficit_phase_id" text;--> statement-breakpoint
+ALTER TABLE "profile" ADD CONSTRAINT "profile_last_deficit_phase_id_phases_id_fk" FOREIGN KEY ("last_deficit_phase_id") REFERENCES "public"."phases"("id") ON DELETE set null ON UPDATE no action;

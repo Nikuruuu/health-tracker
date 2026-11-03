@@ -6,6 +6,8 @@ import {
   validateMilestones,
   getPhaseRecalibrationPreview,
   resolveDeficitPhaseOnMaintenanceOff,
+  calculateMaintenanceToggleTransition,
+  calculatePhaseSwitchTransition,
 } from "./phases";
 
 describe("domain/phases", () => {
@@ -178,14 +180,172 @@ describe("domain/phases", () => {
   });
 
   describe("resolveDeficitPhaseOnMaintenanceOff", () => {
-    it("returns the last deficit phase from the list", () => {
-      const phasesList = [
-        { id: "p1", mode: "deficit" },
-        { id: "p2", mode: "deficit" },
-        { id: "p3", mode: "deficit" },
-        { id: "p4", mode: "maintenance" },
+    const phasesList = [
+      { id: "p1", mode: "deficit", startDate: "2026-01-01" },
+      { id: "p2", mode: "deficit", startDate: "2026-02-01" },
+      { id: "p3", mode: "deficit", startDate: "2026-05-01" },
+      { id: "p4", mode: "maintenance", startDate: "2026-08-01" },
+    ];
+
+    it("restores the saved lastDeficitPhaseId if present and valid", () => {
+      expect(resolveDeficitPhaseOnMaintenanceOff(phasesList, "p2")).toBe("p2");
+      expect(resolveDeficitPhaseOnMaintenanceOff(phasesList, "p1")).toBe("p1");
+      expect(resolveDeficitPhaseOnMaintenanceOff(phasesList, "p3")).toBe("p3");
+    });
+
+    it("falls back to the latest deficit phase by date when lastDeficitPhaseId is empty or null", () => {
+      expect(resolveDeficitPhaseOnMaintenanceOff(phasesList, null)).toBe("p3");
+      expect(resolveDeficitPhaseOnMaintenanceOff(phasesList, "")).toBe("p3");
+      expect(resolveDeficitPhaseOnMaintenanceOff(phasesList, undefined)).toBe("p3");
+    });
+
+    it("falls back to the latest deficit phase by date when lastDeficitPhaseId is no longer valid", () => {
+      // "non_existent" is not in deficit phases
+      expect(resolveDeficitPhaseOnMaintenanceOff(phasesList, "non_existent")).toBe("p3");
+      // "p4" is maintenance, not deficit
+      expect(resolveDeficitPhaseOnMaintenanceOff(phasesList, "p4")).toBe("p3");
+    });
+
+    it("correctly identifies the latest deficit phase by date regardless of array order", () => {
+      const unsorted = [
+        { id: "p3", mode: "deficit", startDate: "2026-05-01" },
+        { id: "p1", mode: "deficit", startDate: "2026-01-01" },
+        { id: "p2", mode: "deficit", startDate: "2026-02-01" },
       ];
-      expect(resolveDeficitPhaseOnMaintenanceOff(phasesList)).toBe("p3");
+      expect(resolveDeficitPhaseOnMaintenanceOff(unsorted, null)).toBe("p3");
+    });
+  });
+
+  describe("Maintenance and Phase Transition Logic", () => {
+    const userPhases = [
+      { id: "phase_1", mode: "deficit", startDate: "2026-01-01" },
+      { id: "phase_2", mode: "deficit", startDate: "2026-02-01" },
+      { id: "phase_3", mode: "deficit", startDate: "2026-05-01" },
+      { id: "phase_4", mode: "maintenance", startDate: "2026-08-01" },
+    ];
+
+    it("Phase 2 -> ON -> OFF returns Phase 2", () => {
+      // 1. User is on Phase 2, turns maintenance ON
+      const onTransition = calculateMaintenanceToggleTransition({
+        enable: true,
+        activePhaseId: "phase_2",
+        lastDeficitPhaseId: null,
+        phases: userPhases,
+      });
+
+      expect(onTransition.nextMaintenanceMode).toBe(true);
+      expect(onTransition.nextActivePhaseId).toBe("phase_4");
+      expect(onTransition.nextLastDeficitPhaseId).toBe("phase_2");
+
+      // 2. User turns maintenance OFF
+      const offTransition = calculateMaintenanceToggleTransition({
+        enable: false,
+        activePhaseId: onTransition.nextActivePhaseId,
+        lastDeficitPhaseId: onTransition.nextLastDeficitPhaseId,
+        phases: userPhases,
+      });
+
+      expect(offTransition.nextMaintenanceMode).toBe(false);
+      expect(offTransition.nextActivePhaseId).toBe("phase_2");
+    });
+
+    it("Phase 3 -> ON -> OFF returns Phase 3", () => {
+      // 1. User is on Phase 3, turns maintenance ON
+      const onTransition = calculateMaintenanceToggleTransition({
+        enable: true,
+        activePhaseId: "phase_3",
+        lastDeficitPhaseId: null,
+        phases: userPhases,
+      });
+
+      expect(onTransition.nextMaintenanceMode).toBe(true);
+      expect(onTransition.nextActivePhaseId).toBe("phase_4");
+      expect(onTransition.nextLastDeficitPhaseId).toBe("phase_3");
+
+      // 2. User turns maintenance OFF
+      const offTransition = calculateMaintenanceToggleTransition({
+        enable: false,
+        activePhaseId: onTransition.nextActivePhaseId,
+        lastDeficitPhaseId: onTransition.nextLastDeficitPhaseId,
+        phases: userPhases,
+      });
+
+      expect(offTransition.nextMaintenanceMode).toBe(false);
+      expect(offTransition.nextActivePhaseId).toBe("phase_3");
+    });
+
+    it("selecting Phase 4 directly, then turning OFF returns the previously active deficit phase", () => {
+      // User is on Phase 2, clicks Phase 4 directly
+      const switchTransition = calculatePhaseSwitchTransition({
+        targetPhaseId: "phase_4",
+        activePhaseId: "phase_2",
+        maintenanceMode: false,
+        lastDeficitPhaseId: null,
+        phases: userPhases,
+      });
+
+      expect(switchTransition.nextActivePhaseId).toBe("phase_4");
+      expect(switchTransition.nextMaintenanceMode).toBe(true);
+      expect(switchTransition.nextLastDeficitPhaseId).toBe("phase_2");
+
+      // User then turns maintenance OFF
+      const offTransition = calculateMaintenanceToggleTransition({
+        enable: false,
+        activePhaseId: switchTransition.nextActivePhaseId,
+        lastDeficitPhaseId: switchTransition.nextLastDeficitPhaseId,
+        phases: userPhases,
+      });
+
+      expect(offTransition.nextActivePhaseId).toBe("phase_2");
+      expect(offTransition.nextMaintenanceMode).toBe(false);
+    });
+
+    it("selecting Phase 4 directly with no prior deficit phase, then OFF falls back to latest deficit phase", () => {
+      // Initial state is Phase 4, lastDeficitPhaseId is null
+      const offTransition = calculateMaintenanceToggleTransition({
+        enable: false,
+        activePhaseId: "phase_4",
+        lastDeficitPhaseId: null,
+        phases: userPhases,
+      });
+
+      expect(offTransition.nextActivePhaseId).toBe("phase_3");
+      expect(offTransition.nextMaintenanceMode).toBe(false);
+    });
+
+    it("never overwrites lastDeficitPhaseId while active phase is Phase 4", () => {
+      // Active phase is Phase 4, lastDeficitPhaseId is already "phase_2"
+      // User calls toggle maintenance ON again or switches to Phase 4
+      const toggleTransition = calculateMaintenanceToggleTransition({
+        enable: true,
+        activePhaseId: "phase_4",
+        lastDeficitPhaseId: "phase_2",
+        phases: userPhases,
+      });
+      expect(toggleTransition.nextLastDeficitPhaseId).toBe("phase_2");
+
+      const switchTransition = calculatePhaseSwitchTransition({
+        targetPhaseId: "phase_4",
+        activePhaseId: "phase_4",
+        maintenanceMode: true,
+        lastDeficitPhaseId: "phase_2",
+        phases: userPhases,
+      });
+      expect(switchTransition.nextLastDeficitPhaseId).toBe("phase_2");
+    });
+
+    it("selecting a deficit phase while maintenance is ON turns maintenance OFF and sets that phase active without overwriting lastDeficitPhaseId", () => {
+      const switchTransition = calculatePhaseSwitchTransition({
+        targetPhaseId: "phase_1",
+        activePhaseId: "phase_4",
+        maintenanceMode: true,
+        lastDeficitPhaseId: "phase_2",
+        phases: userPhases,
+      });
+
+      expect(switchTransition.nextActivePhaseId).toBe("phase_1");
+      expect(switchTransition.nextMaintenanceMode).toBe(false);
+      expect(switchTransition.nextLastDeficitPhaseId).toBe("phase_2");
     });
   });
 });

@@ -15,6 +15,13 @@
       "when": 1793627174599,
       "tag": "0001_condemned_alice",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793690055440,
+      "tag": "0002_green_tomas",
+      "breakpoints": true
     }
   ]
 }

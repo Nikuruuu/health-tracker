@@ -55,6 +55,20 @@ describe("Settings Server Actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.session.user.id = "user_A";
+    mocks.db.query.profile.findFirst.mockResolvedValue({
+      userId: "user_A",
+      startWeightKg: "90.0",
+      finalGoalWeightKg: "65.0",
+      activePhaseId: "user_A_phase_1",
+      lastDeficitPhaseId: null,
+      maintenanceMode: false,
+    });
+    mocks.db.query.phases.findMany.mockResolvedValue([
+      { id: "user_A_phase_1", mode: "deficit", startDate: "2026-01-01" },
+      { id: "user_A_phase_2", mode: "deficit", startDate: "2026-02-01" },
+      { id: "user_A_phase_3", mode: "deficit", startDate: "2026-05-01" },
+      { id: "user_A_phase_4", mode: "maintenance", startDate: "2026-08-01" },
+    ]);
   });
 
   describe("updateTargetsAction", () => {
@@ -107,12 +121,50 @@ describe("Settings Server Actions", () => {
       // User A is logged in
       mocks.session.user.id = "user_A";
 
-      // Phase lookup returns null because the phase belongs to User B, not User A
-      mocks.db.query.phases.findFirst.mockResolvedValue(null);
+      // Phase lookup only returns User A's phases; user_B_phase_2 is not found
+      mocks.db.query.phases.findMany.mockResolvedValue([
+        { id: "user_A_phase_1", mode: "deficit", startDate: "2026-01-01" },
+        { id: "user_A_phase_2", mode: "deficit", startDate: "2026-02-01" },
+      ]);
 
       await expect(
         switchPhaseAction({ phaseId: "user_B_phase_2" })
       ).rejects.toThrow("Target phase not found.");
+    });
+
+    it("prevents User A from restoring or adopting a phase ID belonging to User B", async () => {
+      mocks.session.user.id = "user_A";
+
+      // User A's profile is loaded with an invalid/foreign lastDeficitPhaseId
+      mocks.db.query.profile.findFirst.mockResolvedValue({
+        userId: "user_A",
+        activePhaseId: "user_A_phase_4",
+        maintenanceMode: true,
+        lastDeficitPhaseId: "user_B_phase_2",
+      });
+
+      // User A's actual phases
+      mocks.db.query.phases.findMany.mockResolvedValue([
+        { id: "user_A_phase_1", mode: "deficit", startDate: "2026-01-01" },
+        { id: "user_A_phase_2", mode: "deficit", startDate: "2026-02-01" },
+        { id: "user_A_phase_3", mode: "deficit", startDate: "2026-05-01" },
+        { id: "user_A_phase_4", mode: "maintenance", startDate: "2026-08-01" },
+      ]);
+
+      const whereMock = vi.fn().mockResolvedValue({});
+      const setMock = vi.fn().mockReturnValue({ where: whereMock });
+      mocks.db.update.mockReturnValue({ set: setMock });
+
+      const res = await toggleMaintenanceAction({ enable: false });
+      expect(res.success).toBe(true);
+
+      // Must fall back to User A's latest deficit phase, NEVER User B's phase
+      expect(setMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          maintenanceMode: false,
+          activePhaseId: "user_A_phase_3",
+        })
+      );
     });
 
     it("User A cannot modify User B's preferences", async () => {
@@ -174,53 +226,187 @@ describe("Settings Server Actions", () => {
     });
   });
 
-  describe("toggleMaintenanceAction", () => {
-    it("activates Phase 4 when maintenance is turned ON", async () => {
+  describe("toggleMaintenanceAction & switchPhaseAction Linkage", () => {
+    const userAPhases = [
+      { id: "user_A_phase_1", mode: "deficit", startDate: "2026-01-01" },
+      { id: "user_A_phase_2", mode: "deficit", startDate: "2026-02-01" },
+      { id: "user_A_phase_3", mode: "deficit", startDate: "2026-05-01" },
+      { id: "user_A_phase_4", mode: "maintenance", startDate: "2026-08-01" },
+    ];
+
+    it("Phase 2 -> ON -> OFF returns Phase 2", async () => {
       mocks.session.user.id = "user_A";
+      mocks.db.query.phases.findMany.mockResolvedValue(userAPhases);
 
-      mocks.db.query.phases.findMany.mockResolvedValue([
-        { id: "user_A_phase_1", mode: "deficit" },
-        { id: "user_A_phase_2", mode: "deficit" },
-        { id: "user_A_phase_3", mode: "deficit" },
-        { id: "user_A_phase_4", mode: "maintenance" },
-      ]);
+      // 1. User is on Phase 2, turns maintenance ON
+      mocks.db.query.profile.findFirst.mockResolvedValue({
+        userId: "user_A",
+        activePhaseId: "user_A_phase_2",
+        maintenanceMode: false,
+        lastDeficitPhaseId: null,
+      });
 
-      const whereMock = vi.fn().mockResolvedValue({});
-      const setMock = vi.fn().mockReturnValue({ where: whereMock });
-      mocks.db.update.mockReturnValue({ set: setMock });
+      const whereMock1 = vi.fn().mockResolvedValue({});
+      const setMock1 = vi.fn().mockReturnValue({ where: whereMock1 });
+      mocks.db.update.mockReturnValue({ set: setMock1 });
 
-      const res = await toggleMaintenanceAction({ enable: true });
-      expect(res.success).toBe(true);
+      const onRes = await toggleMaintenanceAction({ enable: true });
+      expect(onRes.success).toBe(true);
 
-      expect(setMock).toHaveBeenCalledWith(
+      expect(setMock1).toHaveBeenCalledWith(
         expect.objectContaining({
           maintenanceMode: true,
           activePhaseId: "user_A_phase_4",
+          lastDeficitPhaseId: "user_A_phase_2",
+        })
+      );
+
+      // 2. User turns maintenance OFF (profile now contains lastDeficitPhaseId: "user_A_phase_2")
+      mocks.db.query.profile.findFirst.mockResolvedValue({
+        userId: "user_A",
+        activePhaseId: "user_A_phase_4",
+        maintenanceMode: true,
+        lastDeficitPhaseId: "user_A_phase_2",
+      });
+
+      const whereMock2 = vi.fn().mockResolvedValue({});
+      const setMock2 = vi.fn().mockReturnValue({ where: whereMock2 });
+      mocks.db.update.mockReturnValue({ set: setMock2 });
+
+      const offRes = await toggleMaintenanceAction({ enable: false });
+      expect(offRes.success).toBe(true);
+
+      expect(setMock2).toHaveBeenCalledWith(
+        expect.objectContaining({
+          maintenanceMode: false,
+          activePhaseId: "user_A_phase_2",
         })
       );
     });
 
-    it("restores the last deficit phase when maintenance is turned OFF", async () => {
+    it("Phase 3 -> ON -> OFF returns Phase 3", async () => {
       mocks.session.user.id = "user_A";
+      mocks.db.query.phases.findMany.mockResolvedValue(userAPhases);
 
-      mocks.db.query.phases.findMany.mockResolvedValue([
-        { id: "user_A_phase_1", mode: "deficit" },
-        { id: "user_A_phase_2", mode: "deficit" },
-        { id: "user_A_phase_3", mode: "deficit" },
-        { id: "user_A_phase_4", mode: "maintenance" },
-      ]);
+      // 1. User is on Phase 3, turns maintenance ON
+      mocks.db.query.profile.findFirst.mockResolvedValue({
+        userId: "user_A",
+        activePhaseId: "user_A_phase_3",
+        maintenanceMode: false,
+        lastDeficitPhaseId: null,
+      });
+
+      const whereMock1 = vi.fn().mockResolvedValue({});
+      const setMock1 = vi.fn().mockReturnValue({ where: whereMock1 });
+      mocks.db.update.mockReturnValue({ set: setMock1 });
+
+      const onRes = await toggleMaintenanceAction({ enable: true });
+      expect(onRes.success).toBe(true);
+
+      expect(setMock1).toHaveBeenCalledWith(
+        expect.objectContaining({
+          maintenanceMode: true,
+          activePhaseId: "user_A_phase_4",
+          lastDeficitPhaseId: "user_A_phase_3",
+        })
+      );
+
+      // 2. User turns maintenance OFF
+      mocks.db.query.profile.findFirst.mockResolvedValue({
+        userId: "user_A",
+        activePhaseId: "user_A_phase_4",
+        maintenanceMode: true,
+        lastDeficitPhaseId: "user_A_phase_3",
+      });
+
+      const whereMock2 = vi.fn().mockResolvedValue({});
+      const setMock2 = vi.fn().mockReturnValue({ where: whereMock2 });
+      mocks.db.update.mockReturnValue({ set: setMock2 });
+
+      const offRes = await toggleMaintenanceAction({ enable: false });
+      expect(offRes.success).toBe(true);
+
+      expect(setMock2).toHaveBeenCalledWith(
+        expect.objectContaining({
+          maintenanceMode: false,
+          activePhaseId: "user_A_phase_3",
+        })
+      );
+    });
+
+    it("selecting Phase 4 directly, then turning OFF returns the previously active deficit phase", async () => {
+      mocks.session.user.id = "user_A";
+      mocks.db.query.phases.findMany.mockResolvedValue(userAPhases);
+
+      // 1. User is on Phase 2, clicks Phase 4 directly
+      mocks.db.query.profile.findFirst.mockResolvedValue({
+        userId: "user_A",
+        activePhaseId: "user_A_phase_2",
+        maintenanceMode: false,
+        lastDeficitPhaseId: null,
+      });
+
+      const whereMock1 = vi.fn().mockResolvedValue({});
+      const setMock1 = vi.fn().mockReturnValue({ where: whereMock1 });
+      mocks.db.update.mockReturnValue({ set: setMock1 });
+
+      const switchRes = await switchPhaseAction({ phaseId: "user_A_phase_4" });
+      expect(switchRes.success).toBe(true);
+
+      expect(setMock1).toHaveBeenCalledWith(
+        expect.objectContaining({
+          activePhaseId: "user_A_phase_4",
+          maintenanceMode: true,
+          lastDeficitPhaseId: "user_A_phase_2",
+        })
+      );
+
+      // 2. User then turns maintenance OFF
+      mocks.db.query.profile.findFirst.mockResolvedValue({
+        userId: "user_A",
+        activePhaseId: "user_A_phase_4",
+        maintenanceMode: true,
+        lastDeficitPhaseId: "user_A_phase_2",
+      });
+
+      const whereMock2 = vi.fn().mockResolvedValue({});
+      const setMock2 = vi.fn().mockReturnValue({ where: whereMock2 });
+      mocks.db.update.mockReturnValue({ set: setMock2 });
+
+      const offRes = await toggleMaintenanceAction({ enable: false });
+      expect(offRes.success).toBe(true);
+
+      expect(setMock2).toHaveBeenCalledWith(
+        expect.objectContaining({
+          activePhaseId: "user_A_phase_2",
+          maintenanceMode: false,
+        })
+      );
+    });
+
+    it("empty or null lastDeficitPhaseId falls back to latest deficit phase by date", async () => {
+      mocks.session.user.id = "user_A";
+      mocks.db.query.phases.findMany.mockResolvedValue(userAPhases);
+
+      // Profile has no lastDeficitPhaseId
+      mocks.db.query.profile.findFirst.mockResolvedValue({
+        userId: "user_A",
+        activePhaseId: "user_A_phase_4",
+        maintenanceMode: true,
+        lastDeficitPhaseId: null,
+      });
 
       const whereMock = vi.fn().mockResolvedValue({});
       const setMock = vi.fn().mockReturnValue({ where: whereMock });
       mocks.db.update.mockReturnValue({ set: setMock });
 
-      const res = await toggleMaintenanceAction({ enable: false });
-      expect(res.success).toBe(true);
+      const offRes = await toggleMaintenanceAction({ enable: false });
+      expect(offRes.success).toBe(true);
 
       expect(setMock).toHaveBeenCalledWith(
         expect.objectContaining({
+          activePhaseId: "user_A_phase_3", // Latest deficit phase by date
           maintenanceMode: false,
-          activePhaseId: "user_A_phase_3",
         })
       );
     });
