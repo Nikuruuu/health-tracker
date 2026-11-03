@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { profileSchema, targetsSchema } from "./schemas";
+import {
+  profileSchema,
+  targetsSchema,
+  milestonesSchema,
+  workoutScheduleSchema,
+  preferencesSchema,
+} from "./schemas";
 
 describe("Settings Schemas Validation", () => {
   describe("profileSchema", () => {
@@ -86,5 +92,66 @@ describe("Settings Schemas Validation", () => {
       expect(res.success).toBe(false);
     });
   });
-});
 
+  describe("milestonesSchema", () => {
+    it("validates positive milestone weights", () => {
+      const res = milestonesSchema.safeParse({
+        phase1GoalKg: 82.0,
+        phase2GoalKg: 73.0,
+        phase3GoalKg: 65.0,
+      });
+      expect(res.success).toBe(true);
+    });
+
+    it("rejects negative or invalid milestone weights", () => {
+      const res = milestonesSchema.safeParse({
+        phase1GoalKg: -5,
+        phase2GoalKg: 73.0,
+        phase3GoalKg: 65.0,
+      });
+      expect(res.success).toBe(false);
+    });
+  });
+
+  describe("workoutScheduleSchema", () => {
+    it("validates a full 7-day schedule", () => {
+      const schedule = [
+        { weekday: "mon", sessionType: "Low-Impact Cardio" },
+        { weekday: "tue", sessionType: "Low-Impact HIIT" },
+        { weekday: "wed", sessionType: "Active Recovery" },
+        { weekday: "thu", sessionType: "Low-Impact Cardio" },
+        { weekday: "fri", sessionType: "Low-Impact HIIT" },
+        { weekday: "sat", sessionType: "60-min Brisk Walk" },
+        { weekday: "sun", sessionType: "Rest" },
+      ];
+      const res = workoutScheduleSchema.safeParse({ schedule });
+      expect(res.success).toBe(true);
+    });
+
+    it("rejects incomplete schedules with fewer than 7 days", () => {
+      const schedule = [
+        { weekday: "mon", sessionType: "Cardio" },
+      ];
+      const res = workoutScheduleSchema.safeParse({ schedule });
+      expect(res.success).toBe(false);
+    });
+  });
+
+  describe("preferencesSchema", () => {
+    it("validates units and theme preferences", () => {
+      const res = preferencesSchema.safeParse({
+        units: "imperial",
+        theme: "dark",
+      });
+      expect(res.success).toBe(true);
+    });
+
+    it("rejects invalid options", () => {
+      const res = preferencesSchema.safeParse({
+        units: "stone",
+        theme: "blue",
+      });
+      expect(res.success).toBe(false);
+    });
+  });
+});

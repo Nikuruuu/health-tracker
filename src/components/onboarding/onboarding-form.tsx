@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { kgToLbs, lbsToKg, cmToInches, inchesToCm } from "@/lib/units";
 import { Scale, Ruler, Calendar, Globe, ArrowRight } from "lucide-react";
+import { CALORIE_CONFIG } from "@/domain/config";
 
 export function OnboardingForm({
   userEmail,
@@ -270,7 +271,7 @@ export function OnboardingForm({
           </div>
 
           <p className="text-xs text-muted-foreground pt-1 leading-relaxed">
-            VitaPath will initialize your 4 structured phases (Phases 1–3 deficit, Phase 4 maintenance) with evenly paced milestones and seed your 1,500 kcal baseline target.
+            VitaPath will initialize your 4 structured phases (Phases 1–3 deficit, Phase 4 maintenance) with evenly paced milestones and seed your {CALORIE_CONFIG.deficitDefaultKcal.toLocaleString()} kcal baseline target.
           </p>
 
           {/* Submit Button */}
